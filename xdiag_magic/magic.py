@@ -16,11 +16,11 @@ class Xdiag(Magics):
     def diag(self, line, cell, command):
         import tempfile
 
-        with tempfile.NamedTemporaryFile(suffix=".diag") as f:
+        with tempfile.NamedTemporaryFile(suffix=".diag", delete=False) as f:
             cell += u"\n"
             f.write(cell.encode('utf-8'))
             f.flush()
-            with tempfile.NamedTemporaryFile(suffix="."+self.output_format) as p:
+            with tempfile.NamedTemporaryFile(suffix="."+self.output_format, delete=False) as p:
                 args = [
                     '-T', self.output_format,
                     '-o', p.name,
