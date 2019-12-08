@@ -2,6 +2,8 @@
 from IPython.core.magic import (Magics, magics_class, line_magic, cell_magic)
 from IPython.core.displaypub import publish_display_data
 
+import sys
+
 @magics_class
 class Xdiag(Magics):
 
@@ -12,15 +14,19 @@ class Xdiag(Magics):
             'png': 'image/png',
             'svg': 'image/svg+xml',
         }
+        self.delete_tempfiles = True
+        if sys.platform in ('win32',):
+            # Win32 raises Permission-Error
+            self.delete_tempfiles = False
 
     def diag(self, line, cell, command):
         import tempfile
 
-        with tempfile.NamedTemporaryFile(suffix=".diag") as f:
+        with tempfile.NamedTemporaryFile(suffix=".diag", delete=self.delete_tempfiles) as f:
             cell += u"\n"
             f.write(cell.encode('utf-8'))
             f.flush()
-            with tempfile.NamedTemporaryFile(suffix="."+self.output_format) as p:
+            with tempfile.NamedTemporaryFile(suffix="."+self.output_format, delete=self.delete_tempfiles) as p:
                 args = [
                     '-T', self.output_format,
                     '-o', p.name,
@@ -44,6 +50,10 @@ class Xdiag(Magics):
             raise Exception("unsupported format " + hint)
         self.output_format = line
 
+    @line_magic
+    def xdiag_delete_tempfiles(self,line):
+        self.delete_tempfiles = (line.strip().upper() in ('YES', 'TRUE', '1'))
+    
     @cell_magic
     def blockdiag(self, line, cell):
         import blockdiag.command
@@ -73,3 +83,6 @@ class Xdiag(Magics):
     def rackdiag(self, line, cell):
         import rackdiag.command
         return self.diag(line, cell, rackdiag.command)
+
+def load_ipython_extension(ipython):
+    ipython.register_magics(Xdiag)
